@@ -1,0 +1,8 @@
+# 窗口颜色配置
+# class                 border  backgr. text    indicator
+client.focused          #d64937 #d64937 #2D2D2D #d64937
+client.unfocused        #2D2D2D #2d2d2d #dcdcdc #292d2e
+client.focused_inactive #2d2d2d #2d2d2d #dcdcdc #484e50
+client.placeholder      #2d2d2d #2d2d2d #dcdcdc #484e50
+client.urgent           #2D2D2D #2D2D2D #dcdcdc #900000
+client.background       #242424

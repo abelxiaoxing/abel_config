@@ -1,0 +1,36 @@
+{
+    "label" : "lock",
+    "action" : "swaylock -i '$(ls /usr/share/backgrounds/* | shuf -n1)'",
+    "text" : "Lock(K)",
+    "keybind" : "k"
+}
+{
+    "label" : "hibernate",
+    "action" : "systemctl hibernate",
+    "text" : "Hibernate(H)",
+    "keybind" : "h"
+}
+{
+    "label" : "logout",
+    "action" : "loginctl terminate-user $USER",
+    "text" : "Logout(L)",
+    "keybind" : "l"
+}
+{
+    "label" : "shutdown",
+    "action" : "systemctl poweroff",
+    "text" : "Shutdown(S)",
+    "keybind" : "s"
+}
+{
+    "label" : "suspend",
+    "action" : "systemctl suspend",
+    "text" : "Suspend(U)",
+    "keybind" : "u"
+}
+{
+    "label" : "reboot",
+    "action" : "systemctl reboot",
+    "text" : "Reboot(R)",
+    "keybind" : "r"
+}

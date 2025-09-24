@@ -1,0 +1,85 @@
+#!/bin/bash
+
+choice=$(
+  echo -e "🔒 Lock\n💤 Suspend\n🌐 Logout\n🚫 Shutdown\n🔋 Hibernate\n🔁 Reboot" |
+    rofi -dmenu -i -p "Power" \
+      -theme-str '
+      window {
+        width: 100%;
+        height: 100%;
+        x: 0;
+        y: 0;
+        background-color: rgba(15, 20, 30, 0.92);
+      }
+      mainbox {
+        orientation: vertical;
+        children: [ message, listview ];
+        spacing: 0;
+      }
+      message {
+        enabled: false;
+      }
+      inputbar {
+        enabled: false;
+      }
+      listview {
+        lines: 6;
+        columns: 3;          /* 3列布局，自动换行 */
+        dynamic: false;
+        spacing: 24px;
+        padding: 0;
+        cycle: true;
+      }
+      element {
+        orientation: vertical;
+        spacing: 8px;
+        padding: 20px 16px;
+        background-color: transparent;
+        text-color: #e0e0e0;
+        font: "FiraCode Nerd Font Mono 14";
+        expand: true;
+      }
+      element-icon {
+        size: 32;
+        vertical-align: 0.5;
+      }
+      element-text {
+        vertical-align: 0.5;
+        highlight: false;
+      }
+      element selected {
+        background-color: rgba(74, 111, 165, 0.4);
+        text-color: #ffffff;
+        border-radius: 12px;
+      }
+    ' \
+      -show-icons \
+      -icon-theme 'Papirus' \
+      -lines 6 \
+      -columns 3
+)
+
+case "$choice" in
+"🔒 Lock")
+  i3lock --scale --image "$(find /usr/share/backgrounds/ -type f -name "*.png" | shuf -n1)"
+  # i3lock -i "$(find /usr/share/backgrounds/ -type f -name "*.png" | shuf -n1 2>/dev/null || echo /usr/share/backgrounds/cat-rainbow-arch.png)"
+  ;;
+"💤 Suspend")
+  systemctl suspend
+  ;;
+"🌐 Logout")
+  loginctl terminate-user "$USER"
+  ;;
+"🚫 Shutdown")
+  systemctl poweroff
+  ;;
+"🔋 Hibernate")
+  systemctl hibernate
+  ;;
+"🔁 Reboot")
+  systemctl reboot
+  ;;
+"")
+  exit 0
+  ;;
+esac

@@ -1,0 +1,355 @@
+# 需要记住的键定义
+# $mod = 在下面设置
+# Mod4 = Super 键
+# Mod1 = ALT 键
+# Control = CTRL 键
+# Shift = SHIFT 键
+# Escape = ESCAPE 键
+# Return = ENTER 或 RETURN 键
+# KP_Enter = 小键盘 Enter
+# Pause = PAUSE 键
+# Print = PRINT 键
+# Tab = TAB 键
+
+# 定义 $mod 变量/键
+
+# 设置 Super 键
+set $mod Mod4
+
+# 定义移动键 - 变量
+# 这是为 qwerty 布局设置的
+set $up k
+set $down j
+set $left h
+set $right l 
+
+# 为后续使用设置变量# 当前设置
+
+set $firstMonitor DP-3
+set $secondMonitor eDP-1
+bindsym $mod+Mod1+1 将工作区移动到左侧显示器
+bindsym $mod+Mod1+2 将工作区移动到右侧显示器
+# 其他示例
+workspace 1 output $firstMonitor
+workspace 2 output $firstMonitor
+workspace 3 output $firstMonitor
+workspace 4 output $firstMonitor
+workspace 5 output $firstMonitor
+workspace 6 output $secondMonitor
+workspace 7 output $secondMonitor
+workspace 8 output $secondMonitor
+workspace 9 output $secondMonitor
+workspace 10 output $secondMonitor
+
+# 切换到工作区
+bindsym $mod+1 workspace 1
+bindsym $mod+2 workspace 2
+bindsym $mod+3 workspace 3
+bindsym $mod+4 workspace 4
+bindsym $mod+5 workspace 5
+bindsym $mod+6 workspace 6
+bindsym $mod+7 workspace 7
+bindsym $mod+8 workspace 8
+bindsym $mod+9 workspace 9
+bindsym $mod+0 workspace 10
+
+# 将焦点容器移动到工作区
+bindsym $mod+Shift+1 move container to workspace 1; workspace 1
+bindsym $mod+Shift+2 move container to workspace 2; workspace 2
+bindsym $mod+Shift+3 move container to workspace 3; workspace 3
+bindsym $mod+Shift+4 move container to workspace 4; workspace 4
+bindsym $mod+Shift+5 move container to workspace 5; workspace 5
+bindsym $mod+Shift+6 move container to workspace 6; workspace 6
+bindsym $mod+Shift+7 move container to workspace 7; workspace 7
+bindsym $mod+Shift+8 move container to workspace 8; workspace 8
+bindsym $mod+Shift+9 move container to workspace 9; workspace 9
+bindsym $mod+Shift+0 move container to workspace 10; workspace 10
+
+# 启动 dmenu
+bindsym $mod+shift+d exec --no-startup-id dmenu_run -i -nb '#191919' -nf '#fea63c' -sb '#fea63c' -sf '#191919' -fn 'NotoMonoRegular:bold:pixelsize=14'
+
+# 启动全屏 rofi
+bindsym $mod+F11 exec --no-startup-id "rofi -font 'Noto Sans 13' -theme-str 'window {width: 100%;height: 100%;}' -show drun"
+
+# 启动小窗口 rofi
+bindsym $mod+F12 exec --no-startup-id rofi -show drun -font "Noto Sans 13"
+
+################# 如何退出、注销、挂起等...
+
+bindsym control+mod1+X mode "$mode_system"
+set $mode_system 系统 (k) 锁定, (l) 注销, (u) 挂起, (h) 休眠, (r) 重启, (s) 关机
+mode "$mode_system" {
+    bindsym k exec --no-startup-id ~/.config/i3/scripts/i3exit.sh lock, mode "default"
+    bindsym l exec --no-startup-id ~/.config/i3/scripts/i3exit.sh logout, mode "default"
+    bindsym u exec --no-startup-id ~/.config/i3/scripts/i3exit.sh suspend, mode "default"
+    bindsym h exec --no-startup-id ~/.config/i3/scripts/i3exit.sh hibernate, mode "default"
+    bindsym r exec --no-startup-id ~/.config/i3/scripts/i3exit.sh reboot, mode "default"
+    bindsym s exec --no-startup-id ~/.config/i3/scripts/i3exit.sh shutdown, mode "default"
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+
+# 选择字体
+font pango:Noto Mono Regular 13
+
+# 注销
+bindsym $mod+X exec --no-startup-id ~/.config/system_scripts/lock-menu
+
+# 原地重启 i3 (保留您的布局/会话，可用于升级 i3)
+bindsym $mod+Shift+r restart
+# 重新加载配置文件
+bindsym $mod+Shift+c reload
+# 杀死焦点窗口
+bindsym $mod+q kill
+# xkill
+bindsym --release $mod+Shift+q exec xkill
+
+# 在 i3 中移动              
+
+# 使用鼠标+$mod 将浮动窗口拖动到想要的位置
+floating_modifier $mod
+
+# 切换平铺 / 浮动
+bindsym $mod+Shift+space floating toggle
+
+# 更改焦点
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+
+# 移动焦点窗口
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+
+# 调整大小
+bindsym $mod+Mod1+Ctrl+Right resize shrink width 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+Up resize grow height 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+Down resize shrink height 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+Left resize grow width 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+l resize shrink width 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+k resize grow height 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+j resize shrink height 1 px or 1 ppt
+bindsym $mod+Mod1+Ctrl+h resize grow width 1 px or 1 ppt
+
+################# 在工作区之间移动         
+
+# 导航到下一个/上一个工作区
+bindsym Mod1+Ctrl+Right workspace next
+bindsym Mod1+Ctrl+Left workspace prev
+
+# 自动切换到有紧急窗口的工作区
+for_window [urgent=latest] focus
+
+# 平铺参数                
+
+# 新工作区的方向
+default_orientation horizontal
+
+# 水平方向分割
+# bindsym $mod+g split h
+
+# 垂直方向分割
+# bindsym $mod+v split v
+
+# 为焦点容器进入全屏模式
+bindsym $mod+f fullscreen toggle
+
+# 更改容器布局 (堆叠, 标签, 切换分割)
+# bindsym $mod+s layout stacking
+# bindsym $mod+z layout tabbed
+# bindsym $mod+e layout toggle split
+
+# 在平铺 / 浮动窗口之间切换焦点
+bindsym $mod+space focus mode_toggle
+
+# conky
+bindsym $mod+c exec --no-startup-id conky-toggle
+bindsym control+mod1+Next exec --no-startup-id conky-rotate -n
+bindsym control+mod1+Prior exec --no-startup-id conky-rotate -p
+# 焦点子容器
+bindsym $mod+Return exec --no-startup-id wezterm; focus
+bindsym $mod+KP_Enter exec --no-startup-id wezterm; focus
+bindsym mod1+Control+t exec --no-startup-id konsole; focus
+bindsym F12 exec --no-startup-id xfce4-terminal --drop-down; focus
+
+# catfish
+bindsym control+mod1+c exec --no-startup-id catfish;focus
+
+
+# 文件管理
+for_window [class="Thunar"] focus
+bindsym $mod+Shift+Return exec --no-startup-id thunar;focus
+bindsym mod1+Shift+Return exec --no-startup-id thunar;focus
+bindsym $mod+Shift+KP_Enter exec --no-startup-id thunar;focus
+
+################# 截图                      
+
+bindsym Print exec --no-startup-id flameshot gui
+bindsym Control+Print exec --no-startup-id flameshot gui
+bindsym $mod+F10 exec --no-startup-id gnome-screenshot -ac
+bindsym $mod+Shift+F10 exec --no-startup-id flameshot gui
+
+################# xbacklight                       
+
+bindsym XF86MonBrightnessUp exec --no-startup-id xbacklight -inc 20 # 增加屏幕亮度
+bindsym XF86MonBrightnessDown exec --no-startup-id xbacklight -dec 20 # 减少屏幕亮度
+################# variety 壁纸管理器
+
+# Variety 键绑定 mod1 = ALT
+# 下一张壁纸
+bindsym $mod+mod1+l exec --no-startup-id variety -n
+bindsym $mod+mod1+Right exec --no-startup-id variety -n
+# 上一张壁纸
+bindsym $mod+mod1+h exec --no-startup-id variety -p
+bindsym $mod+mod1+Left exec --no-startup-id variety -p
+# 收藏壁纸
+bindsym $mod+mod1+f exec --no-startup-id variety -f
+# 暂停壁纸
+bindsym $mod+mod1+k exec --no-startup-id variety --pause
+# 恢复壁纸
+bindsym $mod+mod1+j exec --no-startup-id variety --resume
+
+################# 边框控制
+
+# 默认1像素边框设置
+default_border pixel 1
+default_floating_border pixel 1
+
+# 边框控制
+hide_edge_borders both
+
+################# i3wm 的 picom                 
+exec_always --no-startup-id picom --config ~/.config/i3/picom.conf
+bindsym control+mod1+o exec --no-startup-id ~/.config/i3/scripts/picom-toggle.sh
+exec_always --no-startup-id $HOME/.config/polybar/launch.sh
+
+################ 自启动
+# Updater
+exec --no-startup-id pamac-tray
+# Autotiling
+exec_always --no-startup-id autotiling
+# network
+exec --no-startup-id nm-applet
+# num lock activated
+exec --no-startup-id numlockx on 
+# bluetooth
+exec --no-startup-id bluetooth
+# sound
+exec --no-startup-id volumeicon
+# clash
+exec --no-startup-id FlClash
+# safeeyes
+exec --no-startup-id safeeyes
+# fcitx
+exec_always --no-startup-id fcitx5
+#variety
+exec --no-startup-id variety
+#feh
+exec_always --no-startup-id feh --bg-scale /usr/share/backgrounds/cat-rainbow-arch.png
+
+################# i3 间隙调整
+
+# 设置默认间隙值
+gaps inner 5
+gaps outer 5
+
+set $mode_gaps 间隙: (o) 外部, (i) 内部
+set $mode_gaps_outer 外部间隙: +|-|0 (局部), Shift + +|-|0 (全局)
+set $mode_gaps_inner 内部间隙: +|-|0 (局部), Shift + +|-|0 (全局)
+bindsym $mod+Shift+g mode "$mode_gaps"
+
+mode "$mode_gaps" {
+        bindsym o      mode "$mode_gaps_outer"
+        bindsym i      mode "$mode_gaps_inner"
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+mode "$mode_gaps_inner" {
+        bindsym plus  gaps inner current plus 5
+        bindsym minus gaps inner current minus 5
+        bindsym 0     gaps inner current set 0
+
+        bindsym Shift+plus  gaps inner all plus 5
+        bindsym Shift+minus gaps inner all minus 5
+        bindsym Shift+0     gaps inner all set 0
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+mode "$mode_gaps_outer" {
+        bindsym plus  gaps outer current plus 5
+        bindsym minus gaps outer current minus 5
+        bindsym 0     gaps outer current set 0
+
+        bindsym Shift+plus  gaps outer all plus 5
+        bindsym Shift+minus gaps outer all minus 5
+        bindsym Shift+0     gaps outer all set 0
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+
+################# 浮动或平铺规则         
+for_window [class="Bleachbit"] floating disable
+for_window [class="Blueberry.py"] floating enable
+for_window [class="Brasero"] floating disable
+for_window [class="Galculator"] floating enable
+for_window [class="Gnome-disks"] floating disable
+for_window [class="^Gnome-font-viewer$"] floating enable
+for_window [class="^Gpick$"] floating enable
+for_window [class="Hexchat"] floating disable
+for_window [class="Imagewriter"] floating enable
+for_window [class="Font-manager"] floating enable
+for_window [class="qt5ct"] floating enable
+for_window [class="Lxappearance"] floating enable
+for_window [class="Nitrogen"] floating disable
+for_window [class="Pavucontrol"] floating disable
+for_window [class="Peek"] floating enable
+for_window [class="^Skype$"] floating enable
+for_window [class="^Spotify$"] floating disable
+for_window [class="System-config-printer.py"] floating enable
+for_window [class="Unetbootin.elf"] floating enable
+for_window [class="Usb-creator-gtk"] floating enable
+for_window [class="^Vlc$"] floating disable
+for_window [class="Wine"] floating disable
+for_window [class="Xfburn"] floating disable
+for_window [class="Xfce4-appfinder"] floating enable
+for_window [class="Xfce4-settings-manager"] floating disable
+for_window [class="Xfce4-taskmanager"] floating enable
+for_window [instance="script-fu"] border normal
+for_window [instance="variety"] floating disable
+for_window [title="Copying"] floating enable
+for_window [title="Deleting"] floating enable
+for_window [title="Moving"] floating enable
+for_window [title="^Terminator Preferences$"] floating enable
+for_window [window_role="pop-up"] floating enable
+for_window [window_role="^Preferences$"] floating enable
+for_window [window_role="setup"] floating enable
+for_window [class="Gnome-terminal"] focus
+for_window [class="Termite"] focus
+for_window [class="Terminator"] focus
+for_window [class="Urxvt"] focus
+for_window [class="Alacritty"] focus
+
+
+bindsym XF86AudioRaiseVolume exec --no-startup-id "amixer -D pulse sset Master '2%+'"
+bindsym XF86AudioLowerVolume exec --no-startup-id "amixer -D pulse sset Master '2%-'"
+bindsym XF86AudioMute exec --no-startup-id "amixer -D pulse set Master toggle"
+bindsym XF86AudioPlay exec --no-startup-id playerctl play-pause
+bindsym XF86AudioNext exec --no-startup-id playerctl next
+bindsym XF86AudioPrev exec --no-startup-id playerctl previous
+bindsym XF86AudioStop exec --no-startup-id playerctl stop
+
+
+################# bar appearance                   
+client.focused #9742b5 #9742b5 #ffffff #9742b5
+client.unfocused #2C2C2C #2C2C2C #ffffff #2C2C2C
+client.focused_inactive #2C2C2C #2C2C2C #ffffff #2C2C2C
+client.focused_inactive #2C2C2C #2C2C2C #ffffff #2C2C2C
+client.placeholder #2C2C2C #2C2C2C #ffffff #2C2C2C
+client.urgent #d42121 #d42121 #f7f7f7 #d42121

@@ -1,0 +1,8 @@
+# 窗口颜色配置
+# class                 border  backgr. text    indicator
+client.focused          #2B6473 #2B6473 #FFA000 #004050
+client.unfocused        #004050 #004050 #cccccc #004050
+client.focused_inactive #004050 #004050 #cccccc #004050
+client.placeholder      #004050 #004050 #cccccc #004050
+client.urgent           #900000 #900000 #ffffff #900000
+client.background       #242424
