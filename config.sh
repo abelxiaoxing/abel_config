@@ -167,8 +167,8 @@ PACKAGE_LIST=(
   ttf-jetbrains-mono-nerd
   noto-fonts-cjk
   # 多种字体
-  wps-office-cn
-  wps-office-mui-zh-cn
-  ttf-wps-fonts
+  # wps-office-cn
+  # wps-office-mui-zh-cn
+  # ttf-wps-fonts
   # wps办公
 )
