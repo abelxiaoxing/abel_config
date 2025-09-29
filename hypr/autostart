@@ -4,8 +4,11 @@
 config=$HOME/.config/hypr
 scripts=$config/scripts
 
-# notification daemon
+# FlClash &
 dunst &
+pot &
+fcitx5 &
+foot --server &
 
 # waybar
 $scripts/launch_waybar &
@@ -16,7 +19,6 @@ $scripts/wall ~/.config/backgrounds/awesome.png &
 # effects
 $scripts/rgb &
 
-fcitx5 & cfw & foot --server&
 # other
 /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP &
