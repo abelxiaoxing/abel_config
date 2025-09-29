@@ -4,6 +4,7 @@ return {
 	check_for_updates = false,
 	exit_behavior = "CloseOnCleanExit", -- 如果shell程序以成功状态退出
 	status_update_interval = 1000,
+	enable_wayland = true,
 
 	-- 滚动条
 	scrollback_lines = 5000,

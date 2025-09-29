@@ -62,9 +62,23 @@ proxy() {
 }
 
 ### ALIASES ###
+# 检测系统发行版并设置 cat 别名
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    case "$ID" in
+        debian|ubuntu|linuxmint)
+            alias cat="batcat"
+            ;;
+        arch|manjaro|endeavouros)
+            alias cat="bat"
+            ;;
+        *)
+            # 其他系统保持默认 cat
+            ;;
+    esac
+fi
 alias vi="nvim"
 alias winegame="/opt/apps/net.winegame.client/files/bin/winegame"
-alias cat="batcat"
 alias top="btm"
 alias fd="fdfind"
 alias ls="lsd"

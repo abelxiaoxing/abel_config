@@ -37,6 +37,12 @@ ONE_WAY_SYNC=(
 
 # 软件包列表
 PACKAGE_LIST=(
+  lsd
+  # ls的rust替代品
+  starship
+  # zsh终端美化
+  wezterm
+  # 终端模拟器
   openssh
   # ssh服务
   neovim
@@ -45,8 +51,12 @@ PACKAGE_LIST=(
   # neovim的wayland剪贴板
   grub-customizer
   # grub引导器
-  htop
+  bottom
   # 系统进程监测
+  bat
+  # 类似cat的工具
+  ripgrep
+  # 快速搜索工具
   polkit
   # 用于控制系统范围的权限,wayland环境下不安装将无法启动,x11环境下可以不装
   rofi
@@ -61,7 +71,7 @@ PACKAGE_LIST=(
   # qt5的主题适配工具,很多界面都是由它配置的例如dolphin
   lxappearance
   # gtk主题适配工具,很多界面都是由它配置的例如thunar
-  flameshot-git
+  flameshot
   # x11下截图工具
   grimblast-git
   # wayland截图工具
@@ -151,18 +161,14 @@ PACKAGE_LIST=(
   arc-kde-git
   # 桌面主题
   kvantum
-  # qt美化
-  archlinux-logout-git
-  archlinux-logout-themes-git
   # arch锁屏功能
   sddm-config-editor-git
   # sddm图形化界面编辑
-  adobe-source-han-sans-cn-fonts
-  ttf-jetbrains-mono
+  ttf-jetbrains-mono-nerd
+  noto-fonts-cjk
   # 多种字体
   wps-office-cn
   wps-office-mui-zh-cn
   ttf-wps-fonts
   # wps办公
 )
-
