@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 TEMP=/tmp/current_wall
 
-files=(~/.config/backgrounds/*)
+files=(/usr/share/backgrounds/*)
 
 hypr=~/.config/hypr
 scripts=$hypr/scripts

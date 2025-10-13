@@ -13,7 +13,7 @@
 ### 1. 下载配置仓库
 
 ```bash
-git clone https://github.com/abelxiaoxing/archlinux_config.git ~/.config/archlinux_config
+git clone https://github.com/abelxiaoxing/abel_config.git ~/.config/archlinux_config
 cd ~/.config/archlinux_config
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-wallpapers_path=".config/backgrounds"
+wallpapers_path="/usr/share/backgrounds"
 
 while true; do
   swaybg -i $(find $wallpapers_path -type f | shuf -n 1) -m fill
