@@ -162,7 +162,7 @@ PACKAGE_LIST=(
   # 桌面主题
   kvantum
   # arch锁屏功能
-  sddm-config-editor-git
+  sddm-conf
   # sddm图形化界面编辑
   ttf-jetbrains-mono-nerd
   noto-fonts-cjk
