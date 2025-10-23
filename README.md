@@ -56,6 +56,7 @@ cd ~/.config/archlinux_config
 - `foot` - Wayland 终端
 - `hypr` - Hyprland 窗口管理器
 - `i3` - i3 窗口管理器
+- `nvim` - neovim配置文件
 - `polybar` - 状态栏
 - `rofi` - 程序启动器
 - `waybar` - Wayland 状态栏

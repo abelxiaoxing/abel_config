@@ -10,6 +10,7 @@ CONFIG_DIRS=(
   "hypr"
   "i3"
   "polybar"
+  "nvim"
   "rofi"
   "waybar"
   "wezterm"
