@@ -16,7 +16,7 @@ export EDITOR='nvim'
 export VISUAL='nvim'
 
 # pnpm
-export PNPM_HOME="~/.local/share/pnpm"
+export PNPM_HOME="$HOME/.local/share/pnpm"
 if [[ ! $PATH =~ $PNPM_HOME ]]; then
     export PATH="$PNPM_HOME:$PATH"
 fi

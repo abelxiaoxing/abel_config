@@ -4,7 +4,7 @@
 config=$HOME/.config/hypr
 scripts=$config/scripts
 
-# FlClash &
+flclash &
 dunst &
 pot &
 fcitx5 &
@@ -15,7 +15,7 @@ $scripts/launch_waybar &
 $scripts/tools/dynamic &
 
 # wallpaper
-$scripts/wall ~/.config/backgrounds/awesome.png &
+$scripts/wall ~/.config/backgrounds/cat-rainbow-arch.png &
 # effects
 $scripts/rgb &
 

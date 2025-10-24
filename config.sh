@@ -46,6 +46,8 @@ PACKAGE_LIST=(
   # 终端模拟器
   openssh
   # ssh服务
+  nodejs
+  # nodejs依赖
   neovim
   # 文本编辑器
   wl-clipboard
