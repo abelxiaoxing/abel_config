@@ -85,6 +85,8 @@ PACKAGE_LIST=(
   pamixer
   # 音量控制软件
   pipewire
+  pipewire-pulse
+  wireplumber
   # 音频和视频管理
   waybar
   # wayland下的bar
