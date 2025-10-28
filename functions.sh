@@ -173,6 +173,58 @@ install_packages() {
   done
 
   echo "软件包安装完成！"
+
+  # 启用必要的服务
+  enable_services
+}
+
+# 启用系统服务
+enable_services() {
+  log_message "开始启用系统服务..."
+
+  # 需要启用的服务列表
+  local services=(
+    "sddm"          # 显示管理器
+    "sshd"          # SSH服务
+    "pipewire"      # PipeWire音频服务
+    "pipewire-pulse" # PipeWire Pulse兼容层
+    "wireplumber"   # PipeWire会话管理
+  )
+
+  # 系统级服务（需要sudo）
+  local system_services=(
+    "sddm"
+    "sshd"
+  )
+
+  # 用户级服务
+  local user_services=(
+    "pipewire"
+    "pipewire-pulse"
+    "wireplumber"
+  )
+
+  # 启用系统级服务
+  for service in "${system_services[@]}"; do
+    echo "正在启用系统服务: $service..."
+    if sudo systemctl enable "$service"; then
+      log_message "系统服务 $service 启用成功"
+    else
+      handle_error "系统服务 $service 启用失败"
+    fi
+  done
+
+  # 启用用户级服务
+  for service in "${user_services[@]}"; do
+    echo "正在启用用户服务: $service..."
+    if systemctl --user enable "$service"; then
+      log_message "用户服务 $service 启用成功"
+    else
+      log_message "用户服务 $service 启用失败（可能需要用户登录后生效）"
+    fi
+  done
+
+  echo "服务启用完成！"
 }
 
 # 日志记录函数
