@@ -1,16 +1,6 @@
 local wezterm = require("wezterm")
 local platform = require("utils.platform")()
 
-local function get_integrated_title_button_style()
-	if platform.is_mac then
-		return "Mac"
-	elseif platform.is_linux then
-		return "Gnome"
-	else
-		return "Windows"
-	end
-end
-
 local config = {
 	term = "xterm-256color",
 	animation_fps = 60,
@@ -71,10 +61,8 @@ local config = {
 	-- 窗口
 	adjust_window_size_when_changing_font_size = false,
 	-- window_decorations = "INTEGRATED_BUTTONS|RESIZE", -- 默认配置，显示所有窗口按钮
-	window_decorations = "RESIZE", -- 隐藏窗口按钮，仅保留调整大小功能
-	integrated_title_button_style = get_integrated_title_button_style(),
-	integrated_title_button_color = "auto",
-	integrated_title_button_alignment = "Right",
+	-- window_decorations = "RESIZE", -- 隐藏窗口按钮，仅保留调整大小功能
+	window_decorations = "NONE", -- 完全隐藏标题栏和窗口按钮
 	initial_cols = 120,
 	initial_rows = 24,
 	window_padding = {
@@ -84,10 +72,6 @@ local config = {
 		bottom = 7,
 	},
 	window_close_confirmation = "AlwaysPrompt",
-	window_frame = {
-		active_titlebar_bg = "#0F2536",
-		inactive_titlebar_bg = "#0F2536",
-	},
 	inactive_pane_hsb = { saturation = 1.0, brightness = 1.0 },
 }
 
