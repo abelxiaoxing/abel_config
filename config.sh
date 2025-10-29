@@ -143,6 +143,8 @@ PACKAGE_LIST=(
   conky
   # 系统信息监测
   blueberry
+  bluez
+  bluez-utils
   # x11的bar下蓝牙控件
   volumeicon
   # 音量管理

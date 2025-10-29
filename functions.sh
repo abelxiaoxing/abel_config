@@ -184,11 +184,12 @@ enable_services() {
 
   # 需要启用的服务列表
   local services=(
-    "sddm"          # 显示管理器
-    "sshd"          # SSH服务
-    "pipewire"      # PipeWire音频服务
+    "sddm"           # 显示管理器
+    "sshd"           # SSH服务
+    "pipewire"       # PipeWire音频服务
     "pipewire-pulse" # PipeWire Pulse兼容层
-    "wireplumber"   # PipeWire会话管理
+    "wireplumber"    # PipeWire会话管理
+    "bluetooth"      # 蓝牙
   )
 
   # 系统级服务（需要sudo）
@@ -241,4 +242,3 @@ handle_error() {
   echo "错误: $error_message" >&2
   return 1
 }
-
