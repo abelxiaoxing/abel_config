@@ -16,10 +16,17 @@ export EDITOR='nvim'
 export VISUAL='nvim'
 
 # pnpm
-export PNPM_HOME="$HOME/.local/share/pnpm"
-if [[ ! $PATH =~ $PNPM_HOME ]]; then
-    export PATH="$PNPM_HOME:$PATH"
+# export PNPM_HOME="$HOME/.local/share/pnpm"
+# if [[ ! $PATH =~ $PNPM_HOME ]]; then
+#     export PATH="$PNPM_HOME:$PATH"
+# fi
+
+#npm
+export NPM_HOME="$HOME/.npm-global/bin"
+if [[ ":$PATH:" != *":$NPM_HOME:"* ]]; then
+    export PATH="$NPM_HOME:$PATH"
 fi
+
 
 # 添加 ~/.bin和~/.local/bin 到 PATH
 if [ -d "$HOME/.bin" ] ; then
