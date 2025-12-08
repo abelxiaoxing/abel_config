@@ -4,6 +4,7 @@
 # .config 目录下的配置
 CONFIG_DIRS=(
   "autotiling"
+  "crush"
   "dunst"
   "fcitx5"
   "foot"
@@ -12,6 +13,7 @@ CONFIG_DIRS=(
   "polybar"
   "nvim"
   "rofi"
+  "uv"
   "waybar"
   "wezterm"
   "wlogout"
