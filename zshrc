@@ -1,3 +1,7 @@
+# 解决 zsh compinit 安全警告问题
+autoload -U compinit
+compinit -u
+
 export QT_QPA_PLATFORMTHEME=qt5ct
 # 设置历史记录文件路径
 HISTFILE=~/.zsh_history
@@ -146,5 +150,7 @@ zipa() {
 }
 
 fastfetch
-
-
+export PATH="$PATH:$HOME/Qt/*/gcc_64/bin(NOn[1])"
+export PATH="$PATH:$HOME/tools/flutter/bin"
+export PATH="/usr/local/cuda/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
