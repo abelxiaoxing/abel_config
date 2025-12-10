@@ -1,0 +1,35 @@
+{
+  "$schema": "https://charm.land/crush.json",
+  "lsp": {
+    "python": {
+      "command": "pyright-langserver",
+      "args": ["--stdio"],
+      "extensions": [".py"]
+    },
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx"]
+    },
+    "vue": {
+      "command": "vue-language-server",
+      "args": ["--stdio"],
+      "extensions": [".vue", ".js", ".ts"]
+    },
+    "html": {
+      "command": "vscode-html-language-server",
+      "args": ["--stdio"],
+      "extensions": [".html", ".htm"]
+    },
+    "css": {
+      "command": "vscode-css-language-server",
+      "args": ["--stdio"],
+      "extensions": [".css", ".scss", ".sass"]
+    },
+    "json": {
+      "command": "vscode-json-language-server",
+      "args": ["--stdio"],
+      "extensions": [".json"]
+    }
+  }
+}
