@@ -1,35 +1,108 @@
 {
   "$schema": "https://charm.land/crush.json",
+  "providers": {
+    "sglang": {
+      "type": "openai-compat",
+      "base_url": "http://43.143.74.19:11022/v1",
+      "api_key": "",
+      "models": [
+        {
+          "id": "qwen3-coder-30b",
+          "name": "qwen3-coder-30b",
+          "context_window": 128000,
+          "default_max_tokens": 8192
+        }
+      ]
+    },
+    "xiaomi": {
+      "type": "openai-compat",
+      "base_url": "https://api.xiaomimimo.com/v1",
+      "api_key": "",
+      "models": [
+        {
+          "id": "mimo-v2-flash",
+          "name": "mimo-v2-flash",
+          "context_window": 256000,
+          "default_max_tokens": 32192
+        }
+      ]
+    }
+
+  },
+  "permissions": {
+    "allowed_tools": [
+      "view",
+      "ls",
+      "grep",
+      "edit",
+      "mcp_context7_get-library-doc"
+    ]
+  },
   "lsp": {
+    "c": {
+      "command": "clangd",
+      "args": [],
+      "extensions": [".c", ".h"]
+    },
+    "cpp": {
+      "command": "clangd",
+      "args": [],
+      "extensions": [".cpp", ".hpp", ".cc", ".cxx"]
+    },
     "python": {
       "command": "pyright-langserver",
       "args": ["--stdio"],
       "extensions": [".py"]
     },
+    "bash": {
+      "command": "bash-language-server",
+      "args": ["start"],
+      "extensions": [".sh", ".bash"]
+    },
     "typescript": {
       "command": "typescript-language-server",
       "args": ["--stdio"],
-      "extensions": [".ts", ".tsx", ".js", ".jsx"]
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]
     },
     "vue": {
       "command": "vue-language-server",
       "args": ["--stdio"],
-      "extensions": [".vue", ".js", ".ts"]
+      "extensions": [".vue"]
     },
     "html": {
-      "command": "vscode-html-language-server",
-      "args": ["--stdio"],
+      "command": "superhtml",
+      "args": ["lsp"],
       "extensions": [".html", ".htm"]
     },
-    "css": {
-      "command": "vscode-css-language-server",
-      "args": ["--stdio"],
-      "extensions": [".css", ".scss", ".sass"]
+    "biome": {
+      "command": "biome",
+      "args": ["lsp-proxy"],
+      "extensions": [".json", ".jsonc", ".js", ".ts", ".tsx", ".jsx"]
     },
-    "json": {
-      "command": "vscode-json-language-server",
+    "tailwindcss": {
+      "command": "tailwindcss-language-server",
       "args": ["--stdio"],
-      "extensions": [".json"]
+      "extensions": [".html", ".css", ".vue", ".js", ".jsx", ".ts", ".tsx"]
+    },
+    "go": {
+      "command": "gopls",
+      "args": [],
+      "extensions": [".go", ".gomod"]
+    },
+    "rust": {
+      "command": "rust-analyzer",
+      "args": [],
+      "extensions": [".rs"]
+    },
+    "lua": {
+      "command": "lua-language-server",
+      "args": [],
+      "extensions": [".lua"]
+    },
+    "yaml": {
+      "command": "yaml-language-server",
+      "args": ["--stdio"],
+      "extensions": [".yaml", ".yml"]
     }
   }
 }
