@@ -1,0 +1,82 @@
+
+{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "opencode",
+  "permission": {
+    "webfetch": "allow",
+    "bash": "ask",
+    "edit": "ask",
+    "skill": "allow",
+    "doom_loop": "ask",
+    "external_directory": "ask"
+  },
+  "watcher": {
+    "ignore": [
+      ".env",
+      "*.pyc",
+      ".env*/**",
+      "secrets/**"
+    ]
+  },
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    }
+  },
+  "provider": {
+    "opencode": {
+      "options": {}
+    }
+  },
+  "lsp": {
+    "c": {
+      "command": ["clangd"],
+      "extensions": [".c", ".h"]
+    },
+    "cpp": {
+      "command": ["clangd"],
+      "extensions": [".cpp", ".hpp", ".cc", ".cxx"]
+    },
+    "python": {
+      "command": ["pyright-langserver", "--stdio"],
+      "extensions": [".py"]
+    },
+    "bash": {
+      "command": ["bash-language-server", "start"],
+      "extensions": [".sh", ".bash"]
+    },
+    "typescript": {
+      "command": ["typescript-language-server", "--stdio"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]
+    },
+    "vue": {
+      "command": ["vue-language-server", "--stdio"],
+      "extensions": [".vue"]
+    },
+    "html": {
+      "command": ["superhtml", "lsp"],
+      "extensions": [".html", ".htm"]
+    },
+    "tailwindcss": {
+      "command": ["tailwindcss-language-server", "--stdio"],
+      "extensions": [".html", ".css", ".vue", ".js", ".jsx", ".ts", ".tsx"]
+    },
+    "go": {
+      "command": ["gopls"],
+      "extensions": [".go", ".gomod"]
+    },
+    "rust": {
+      "command": ["rust-analyzer"],
+      "extensions": [".rs"]
+    },
+    "lua": {
+      "command": ["lua-language-server"],
+      "extensions": [".lua"]
+    },
+    "yaml": {
+      "command": ["yaml-language-server", "--stdio"],
+      "extensions": [".yaml", ".yml"]
+    }
+  }
+}

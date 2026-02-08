@@ -1,0 +1,11 @@
+# Runtime/state files that should never be managed
+**/*.db
+**/*.log
+**/.DS_Store
+
+# Opencode runtime files (kept out of repo)
+.config/opencode/node_modules/**
+.config/opencode/bun.lock
+.config/opencode/package.json
+.config/opencode/.gitignore
+

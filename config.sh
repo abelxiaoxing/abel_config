@@ -4,14 +4,14 @@
 # .config 目录下的配置
 CONFIG_DIRS=(
   "autotiling"
-  "crush"
   "dunst"
   "fcitx5"
   "foot"
   "hypr"
   "i3"
-  "polybar"
   "nvim"
+  "opencode"
+  "polybar"
   "rofi"
   "uv"
   "waybar"
@@ -24,7 +24,7 @@ CONFIG_DIRS=(
 
 # 用户配置文件（Home目录）
 USER_CONFIG_FILES=(
-  "./zshrc:$HOME/.zshrc"
+  "$HOME/.zshrc"
 )
 
 # 系统配置文件（需要sudo权限）

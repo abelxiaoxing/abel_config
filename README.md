@@ -5,7 +5,7 @@
 1. **模块化配置管理**: 提供多种配置好的统一快捷键工作环境（i3, hyprland）
 2. **完整美化方案**: 清爽简介的界面美化配置
 3. **智能脚本系统**: 自动化配置同步和环境安装
-4. **双向同步功能**: 支持配置文件的双向同步，便于备份和恢复
+4. **用户配置由 chezmoi 管理**: dotfiles 统一用 chezmoi apply/add，同步更可靠
 5. **交互式操作**: 提供数字菜单界面，操作简单直观
 
 ## 快速开始
@@ -29,27 +29,32 @@ cd ~/.config/archlinux_config
 
 ```
 ==========================================
-    Arch Linux 配置管理工具 v2.0
+    Arch Linux 配置管理工具 v3.0
 ==========================================
 
 1. 同步配置到系统
 2. 同步系统配置到项目
 3. 环境安装
 4. 更新镜像源
+5. 一键部署（换源+安装+同步）
 0. 退出
 ==========================================
 ```
 
 #### 功能详解
 
-1. **同步配置到系统**: 将项目中的配置文件同步到系统对应位置
-2. **同步系统配置到项目**: 将系统中的配置文件同步回项目，便于备份
+1. **同步配置到系统**: 仅对有差异的内容提供 diff/overwrite/all-overwrite/skip/quit 确认后再写入系统
+2. **同步系统配置到项目**: 仅对有差异的用户配置提供 diff/overwrite/all-overwrite/skip/quit 交互提示
 3. **环境安装**: 自动更新镜像源并安装所有必要的软件包
 4. **更新镜像源**: 仅更新系统镜像源为国内源
+5. **一键部署**: 换源 + 安装软件包 + 同步配置到系统
 
 ### 支持的配置文件
 
-#### .config 目录配置
+#### 用户配置（chezmoi 管理）
+> 源文件位于 `./chezmoi/`，应用到系统时写入 `~/.config/...` 和 `~/.zshrc` 等位置
+
+##### .config 目录配置
 - `autotiling` - 平铺桌面智能分割窗口
 - `dunst` - 通知系统
 - `fcitx5` - 中文输入法
@@ -57,6 +62,7 @@ cd ~/.config/archlinux_config
 - `hypr` - Hyprland 窗口管理器
 - `i3` - i3 窗口管理器
 - `nvim` - neovim配置文件
+- `opencode` - opencode配置文件
 - `polybar` - 状态栏
 - `rofi` - 程序启动器
 - `waybar` - Wayland 状态栏
@@ -66,15 +72,15 @@ cd ~/.config/archlinux_config
 - `ZshPlugins` - Zsh 插件
 - `system_scripts` - 系统脚本
 
-#### 用户配置文件
-- `zshrc` - Zsh 配置文件
+##### 用户配置文件
+- `~/.zshrc` - Zsh 配置文件
 
-#### 系统配置文件
+#### 系统配置（脚本管理，需要 sudo）
 - `pacman.conf` - 包管理器配置
 - `paru.conf` - AUR 助手配置
 
-#### 单向同步文件
-- `backgrounds` - 壁纸文件（仅同步到系统）
+#### 单向同步文件（脚本管理，需要 sudo）
+- `backgrounds` - 壁纸文件（同步到 `/usr/share/backgrounds`）
 
 ## 快捷键查看
 
@@ -121,24 +127,28 @@ archlinux_config/
 ├── autoinstall.sh          # 主脚本，提供交互式菜单
 ├── config.sh             # 配置文件，定义路径和包列表
 ├── functions.sh          # 函数库，包含核心功能
-├── zshrc               # Zsh 配置文件
 ├── pacman.conf          # Pacman 配置文件
 ├── paru.conf           # Paru 配置文件
 ├── backgrounds/         # 壁纸文件
-├── system_scripts/      # 系统脚本
-├── ZshPlugins/         # Zsh 插件
-├── autotiling/         # Autotiling 配置
-├── dunst/             # 通知系统配置
-├── fcitx5/            # 输入法配置
-├── foot/              # Foot 终端配置
-├── hypr/              # Hyprland 配置
-├── i3/                # i3 配置
-├── polybar/           # Polybar 配置
-├── rofi/              # Rofi 配置
-├── waybar/            # Waybar 配置
-├── wezterm/           # Wezterm 配置
-├── wlogout/           # Wlogout 配置
-└── wofi/              # Wofi 配置
+└── chezmoi/             # 用户配置（chezmoi 源）
+    ├── dot_zshrc
+    └── dot_config/
+        ├── autotiling/
+        ├── dunst/
+        ├── fcitx5/
+        ├── foot/
+        ├── hypr/
+        ├── i3/
+        ├── nvim/
+        ├── opencode/
+        ├── polybar/
+        ├── rofi/
+        ├── system_scripts/
+        ├── waybar/
+        ├── wezterm/
+        ├── wlogout/
+        ├── ZshPlugins/
+        └── wofi/
 ```
 
 ## 注意事项
@@ -156,4 +166,3 @@ archlinux_config/
 - 实现双向同步功能
 - 分离配置同步和环境安装
 - 优化错误处理和日志记录
-
