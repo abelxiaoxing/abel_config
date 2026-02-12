@@ -1,5 +1,5 @@
 #!/bin/bash
-# Arch Linux 配置管理工具 v2.0
+# Arch Linux 配置管理工具 v3.0
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PROJECT_ROOT
@@ -38,19 +38,19 @@ show_submenu() {
 # 等待用户按键
 wait_for_key() {
   echo ""
-  read -p "按回车键继续..." -r
+  read -r -p "按回车键继续..."
 }
 
 # 主程序循环
 main() {
   while true; do
     show_main_menu
-    read -p "请选择操作 (0-5): " choice
+    read -r -p "请选择操作 (0-5): " choice
 
     # 清理输入，只保留数字
-    choice=$(echo "$choice" | tr -d '[:space:]')
+    choice="${choice//[[:space:]]/}"
 
-    case $choice in
+    case "$choice" in
     1)
       while true; do
         show_submenu "同步配置到系统"
@@ -59,16 +59,16 @@ main() {
         echo "3. 仅同步系统配置（/etc + 壁纸）"
         echo "0. 返回主菜单"
         echo ""
-        read -p "请选择操作 (0-3): " subchoice
-        subchoice=$(echo "$subchoice" | tr -d '[:space:]')
+        read -r -p "请选择操作 (0-3): " subchoice
+        subchoice="${subchoice//[[:space:]]/}"
 
-        case $subchoice in
+        case "$subchoice" in
         1)
-          sync_config_to_system_interactive
+          sync_config_to_system_interactive || echo "同步已中止或失败。"
           wait_for_key
           ;;
         2)
-          apply_user_configs_with_chezmoi_interactive
+          apply_user_configs_with_chezmoi_interactive || echo "同步已中止或失败。"
           wait_for_key
           ;;
         3)
@@ -97,14 +97,17 @@ main() {
         echo "3. 仅同步系统配置回项目（/etc）"
         echo "0. 返回主菜单"
         echo ""
-        read -p "请选择操作 (0-3): " subchoice
-        subchoice=$(echo "$subchoice" | tr -d '[:space:]')
+        read -r -p "请选择操作 (0-3): " subchoice
+        subchoice="${subchoice//[[:space:]]/}"
 
-        case $subchoice in
+        case "$subchoice" in
         1)
           if sync_user_configs_to_project_interactive; then
-            sync_system_config_to_project
-            echo "同步回项目完成！"
+            if sync_system_config_to_project; then
+              echo "同步回项目完成！"
+            else
+              echo "系统配置同步回项目失败。"
+            fi
           else
             echo "同步已中止或失败。"
           fi
@@ -119,8 +122,11 @@ main() {
           wait_for_key
           ;;
         3)
-          sync_system_config_to_project
-          echo "系统配置同步回项目完成！"
+          if sync_system_config_to_project; then
+            echo "系统配置同步回项目完成！"
+          else
+            echo "系统配置同步回项目失败。"
+          fi
           wait_for_key
           ;;
         0)
@@ -135,21 +141,32 @@ main() {
       ;;
     3)
       show_submenu "换源+环境安装"
-      update_mirrorlist
-      install_packages
+      if update_mirrorlist; then
+        install_packages || echo "环境安装出现错误，请查看日志。"
+      else
+        echo "镜像源更新失败，已取消安装。"
+      fi
       wait_for_key
       ;;
     4)
       show_submenu "仅更新镜像源"
-      update_mirrorlist
-      echo "镜像源更新完成！"
+      if update_mirrorlist; then
+        echo "镜像源更新完成！"
+      else
+        echo "镜像源更新失败！"
+      fi
       wait_for_key
       ;;
     5)
       show_submenu "一键部署（换源+安装+同步）"
-      update_mirrorlist
-      install_packages
-      sync_config_to_system_interactive
+      if update_mirrorlist; then
+        if ! install_packages; then
+          echo "软件包安装出现错误，将继续同步配置..."
+        fi
+        sync_config_to_system_interactive || echo "同步已中止或失败。"
+      else
+        echo "镜像源更新失败，已取消一键部署。"
+      fi
       wait_for_key
       ;;
     0)

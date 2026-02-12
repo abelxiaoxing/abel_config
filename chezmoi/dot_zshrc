@@ -3,6 +3,8 @@ autoload -U compinit
 compinit -u
 
 export QT_QPA_PLATFORMTHEME=qt5ct
+export HF_ENDPOINT=https://hf-mirror.com
+
 # 设置历史记录文件路径
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
@@ -15,10 +17,9 @@ setopt HIST_IGNORE_SPACE     # 以空格开头的命令不记录
 setopt HIST_VERIFY           # 替换历史后不立即执行，先显示
 setopt INC_APPEND_HISTORY    # 每条命令执行后立即写入历史文件
 
-#make nvim the default editor 
+#make nvim the default editor
 export EDITOR='nvim'
 export VISUAL='nvim'
-
 
 # 添加 ~/.bin和~/.local/bin 到 PATH
 if [ -d "$HOME/.bin" ] ; then
@@ -86,10 +87,10 @@ if [ -f /etc/os-release ]; then
     . /etc/os-release
     case "$ID" in
         debian|ubuntu|linuxmint)
-            alias cat="batcat"
+            alias cat="batcat -p"
             ;;
         arch|manjaro|endeavouros)
-            alias cat="bat"
+            alias cat="bat -p"
             ;;
         *)
             # 其他系统保持默认 cat
@@ -99,7 +100,6 @@ fi
 alias vi="nvim"
 alias winegame="/opt/apps/net.winegame.client/files/bin/winegame"
 alias top="btm"
-alias fd="fdfind"
 alias ls="lsd"
 alias tree="lsd --tree"
 alias grep="rg"
@@ -158,5 +158,3 @@ zipa() {
 }
 
 fastfetch
-# 使用 Glob Qualifiers 查找 Qt 路径
-export PATH="$PATH:$HOME/Qt/*/gcc_64/bin(NOn[1])"

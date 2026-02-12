@@ -3,9 +3,12 @@
 **/*.log
 **/.DS_Store
 
+# Generated caches/state inside ~/.config (do not sync)
+.config/fcitx5/**/cached_layouts*
+.config/hypr/store/**
+
 # Opencode runtime files (kept out of repo)
 .config/opencode/node_modules/**
 .config/opencode/bun.lock
 .config/opencode/package.json
 .config/opencode/.gitignore
-

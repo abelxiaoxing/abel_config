@@ -8,12 +8,41 @@ chezmoi_cmd() {
   chezmoi --source "$CHEZMOI_SOURCE_DIR" "$@"
 }
 
+ensure_sudo() {
+  if ! command -v sudo >/dev/null 2>&1; then
+    handle_error "未找到 sudo 命令"
+    return 1
+  fi
+
+  if sudo -n true 2>/dev/null; then
+    return 0
+  fi
+
+  log_message "需要 sudo 权限，请输入密码..."
+  sudo -v || handle_error "无法获取 sudo 权限"
+}
+
+backup_sudo_file_if_exists() {
+  local file_path="$1"
+  local backup_path
+
+  sudo test -f "$file_path" 2>/dev/null || return 0
+
+  backup_path="$file_path.bak-$(date '+%Y%m%d%H%M%S')"
+  if ! sudo cp -a -- "$file_path" "$backup_path"; then
+    handle_error "备份失败: $file_path -> $backup_path"
+    return 1
+  fi
+
+  log_message "已备份: $backup_path"
+}
+
 prompt_action() {
   local prompt="$1"
   local action
   while true; do
     read -r -p "$prompt" action
-    action="$(echo "$action" | tr -d '[:space:]')"
+    action="${action//[[:space:]]/}"
     case "$action" in
     d | D | o | O | a | A | s | S | q | Q)
       echo "$action"
@@ -28,13 +57,20 @@ prompt_action() {
 
 chezmoi_apply_change_count() {
   local target="$1"
-  chezmoi_cmd status --no-pager "$target" 2>/dev/null | awk 'length($0)>=2 && substr($0,2,1)!=" " {c++} END {print c+0}'
+  local mode="${2:-auto}"
+
+  if [ "$mode" = "dir" ] || { [ "$mode" = "auto" ] && [ -d "$target" ]; }; then
+    chezmoi_cmd status --no-pager --recursive "$target" 2>/dev/null | awk 'length($0)>=2 && substr($0,2,1)!=" " {c++} END {print c+0}'
+  else
+    chezmoi_cmd status --no-pager "$target" 2>/dev/null | awk 'length($0)>=2 && substr($0,2,1)!=" " {c++} END {print c+0}'
+  fi
 }
 
 print_chezmoi_diff() {
   local target="$1"
+  local mode="${2:-auto}"
   local diff_output
-  if [ -d "$target" ]; then
+  if [ "$mode" = "dir" ] || { [ "$mode" = "auto" ] && [ -d "$target" ]; }; then
     diff_output="$(chezmoi_cmd diff --no-pager --recursive "$target" 2>/dev/null || true)"
   else
     diff_output="$(chezmoi_cmd diff --no-pager "$target" 2>/dev/null || true)"
@@ -46,12 +82,24 @@ print_chezmoi_diff() {
   fi
 }
 
+chezmoi_apply_force() {
+  local target="$1"
+  local mode="${2:-auto}"
+
+  if [ "$mode" = "dir" ] || { [ "$mode" = "auto" ] && [ -d "$target" ]; }; then
+    chezmoi_cmd apply --force --recursive "$target"
+  else
+    chezmoi_cmd apply --force "$target"
+  fi
+}
+
 ensure_chezmoi() {
   if command -v chezmoi >/dev/null 2>&1; then
     return 0
   fi
 
   log_message "chezmoi 未安装，正在尝试安装..."
+  ensure_sudo || return 1
   if sudo pacman -S --noconfirm --needed chezmoi; then
     log_message "chezmoi 安装成功"
     return 0
@@ -75,7 +123,7 @@ apply_user_configs_with_chezmoi() {
   fi
 
   log_message "正在应用选择的用户配置（chezmoi）..."
-  chezmoi_cmd apply "$@"
+  chezmoi_cmd apply --recursive "$@"
 }
 
 apply_user_configs_with_chezmoi_interactive() {
@@ -89,21 +137,27 @@ apply_user_configs_with_chezmoi_interactive() {
   local items=()
   local item
   for dir in "${CONFIG_DIRS[@]}"; do
-    items+=("$dir|$HOME/.config/$dir")
+    if [ "$dir" = "opencode" ]; then
+      items+=("opencode|$HOME/.config/opencode/opencode.json|file")
+    else
+      items+=("$dir|$HOME/.config/$dir|dir")
+    fi
   done
   for target in "${USER_CONFIG_FILES[@]}"; do
-    items+=("$(basename "$target")|$target")
+    items+=("$(basename "$target")|$target|file")
   done
 
   local changed_items=()
   local unchanged_items=()
   for item in "${items[@]}"; do
     local label="${item%%|*}"
-    local target="${item#*|}"
+    local rest="${item#*|}"
+    local target="${rest%%|*}"
+    local mode="${rest##*|}"
     local count
-    count="$(chezmoi_apply_change_count "$target")"
+    count="$(chezmoi_apply_change_count "$target" "$mode")"
     if [ "$count" -gt 0 ]; then
-      changed_items+=("$label|$target|$count")
+      changed_items+=("$label|$target|$mode|$count")
     else
       unchanged_items+=("$label")
     fi
@@ -118,8 +172,7 @@ apply_user_configs_with_chezmoi_interactive() {
   echo "- 需要同步的模块:"
   for item in "${changed_items[@]}"; do
     local label="${item%%|*}"
-    local rest="${item#*|}"
-    local count="${rest##*|}"
+    local count="${item##*|}"
     echo "  - $label ($count)"
   done
   if [ "${#unchanged_items[@]}" -gt 0 ]; then
@@ -142,6 +195,8 @@ apply_user_configs_with_chezmoi_interactive() {
     local label="${item%%|*}"
     local rest="${item#*|}"
     local target="${rest%%|*}"
+    rest="${rest#*|}"
+    local mode="${rest%%|*}"
 
     local action
     if [ "$overwrite_all" -eq 1 ]; then
@@ -153,7 +208,7 @@ apply_user_configs_with_chezmoi_interactive() {
         action="$(prompt_action "选择 [d/o/a/s/q]: ")"
         case "$action" in
         d | D)
-          print_chezmoi_diff "$target"
+          print_chezmoi_diff "$target" "$mode"
           ;;
         *)
           break
@@ -167,7 +222,7 @@ apply_user_configs_with_chezmoi_interactive() {
       if [ "$action" = "a" ] || [ "$action" = "A" ]; then
         overwrite_all=1
       fi
-      chezmoi_cmd apply --force "$target" || handle_error "chezmoi apply 失败: $label"
+      chezmoi_apply_force "$target" "$mode" || handle_error "chezmoi apply 失败: $label"
       applied_any=1
       log_message "已同步到系统: $label"
       ;;
@@ -185,6 +240,8 @@ apply_user_configs_with_chezmoi_interactive() {
 }
 
 sync_system_config_to_system_interactive() {
+  ensure_sudo || return 1
+
   echo "系统配置（/etc）变更扫描完成："
 
   local changed=()
@@ -260,9 +317,15 @@ sync_system_config_to_system_interactive() {
       if [ "$action" = "a" ] || [ "$action" = "A" ]; then
         overwrite_all=1
       fi
-      sudo install -Dm 0644 "$src_file" "$dest_file" || handle_error "同步失败: $dest_file"
-      applied_any=1
-      log_message "已同步到系统: $dest_file"
+      if ! backup_sudo_file_if_exists "$dest_file"; then
+        return 1
+      fi
+      if sudo install -Dm 0644 "$src_file" "$dest_file"; then
+        applied_any=1
+        log_message "已同步到系统: $dest_file"
+      else
+        handle_error "同步失败: $dest_file"
+      fi
       ;;
     s | S)
       log_message "已跳过: $dest_file"
@@ -278,6 +341,8 @@ sync_system_config_to_system_interactive() {
 }
 
 sync_one_way_to_system_interactive() {
+  ensure_sudo || return 1
+
   local overwrite_all=0
   local config
 
@@ -300,10 +365,7 @@ sync_one_way_to_system_interactive() {
         continue
       fi
 
-      local src_sum dest_sum
-      src_sum="$(sha256sum "$file" | awk '{print $1}')"
-      dest_sum="$(sudo sha256sum "$dest_path" 2>/dev/null | awk '{print $1}')"
-      if [ -n "$src_sum" ] && [ -n "$dest_sum" ] && [ "$src_sum" != "$dest_sum" ]; then
+      if ! sudo cmp -s "$file" "$dest_path" 2>/dev/null; then
         changed_files+=("$rel (modified)")
       fi
     done < <(find "$src_file" -type f -print0 2>/dev/null)
@@ -341,7 +403,7 @@ sync_one_way_to_system_interactive() {
         overwrite_all=1
       fi
       sudo mkdir -p "$dest_file" || handle_error "创建目录失败: $dest_file"
-      sudo cp -rf "$src_file"/* "$dest_file/" || handle_error "同步失败: $src_file"
+      sudo cp -rf "$src_file"/. "$dest_file/" || handle_error "同步失败: $src_file"
       log_message "已同步到系统: $dest_file"
       ;;
     s | S)
@@ -403,7 +465,7 @@ sync_user_configs_to_project_interactive() {
   local dir
   for dir in "${CONFIG_DIRS[@]}"; do
     if [ "$dir" = "opencode" ]; then
-      [ -d "$HOME/.config/opencode" ] && items+=("opencode|$HOME/.config/opencode|special")
+      [ -f "$HOME/.config/opencode/opencode.json" ] && items+=("opencode|$HOME/.config/opencode/opencode.json|file")
       continue
     fi
     [ -d "$HOME/.config/$dir" ] && items+=("$dir|$HOME/.config/$dir|dir")
@@ -424,10 +486,11 @@ sync_user_configs_to_project_interactive() {
     local label="${item%%|*}"
     local rest="${item#*|}"
     local target="${rest%%|*}"
+    local mode="${rest##*|}"
     local count
-    count="$(chezmoi_apply_change_count "$target")"
+    count="$(chezmoi_apply_change_count "$target" "$mode")"
     if [ "$count" -gt 0 ]; then
-      changed_items+=("$label|$target|${rest##*|}|$count")
+      changed_items+=("$label|$target|$mode|$count")
     else
       unchanged_items+=("$label")
     fi
@@ -483,7 +546,7 @@ sync_user_configs_to_project_interactive() {
         action="$(prompt_action "选择 [d/o/a/s/q]: ")"
         case "$action" in
         d | D)
-          print_chezmoi_diff "$target"
+          print_chezmoi_diff "$target" "$mode"
           ;;
         *)
           break
@@ -499,9 +562,6 @@ sync_user_configs_to_project_interactive() {
       fi
 
       case "$mode" in
-      special)
-        [ -f "$HOME/.config/opencode/opencode.json" ] && chezmoi_cmd add --force "$HOME/.config/opencode/opencode.json" || true
-        ;;
       dir)
         chezmoi_cmd add --force --exact --recursive "$target" || handle_error "chezmoi add 失败: $label"
         ;;
@@ -553,40 +613,41 @@ update_mirrorlist() {
   local aliyun="Server = https://mirrors.aliyun.com/archlinux/\$repo/os/\$arch"
   local tsinghua="Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/\$repo/os/\$arch"
 
+  ensure_sudo || return 1
   log_message "开始更新镜像源..."
 
-  # 检查镜像源文件是否存在
-  if [ ! -f "$mirrorlist" ]; then
-    echo "$aliyun" | sudo tee "$mirrorlist" >/dev/null
-    echo "$tsinghua" | sudo tee -a "$mirrorlist" >/dev/null
-    log_message "镜像源文件已创建"
-    return
-  fi
+  local temp_file
+  temp_file="$(mktemp)" || { handle_error "创建临时文件失败"; return 1; }
 
-  # 检查是否已包含阿里云镜像源
-  if ! sudo grep -q "^$aliyun" "$mirrorlist"; then
-    # 创建临时文件
-    local temp_file=$(mktemp)
+  (
+    trap 'rm -f "$temp_file"' EXIT
 
-    # 添加阿里云镜像源到顶部
-    echo "$aliyun" >"$temp_file"
+    {
+      echo "$aliyun"
+      echo "$tsinghua"
+      echo ""
+      if sudo test -f "$mirrorlist" 2>/dev/null; then
+        sudo awk -v aliyun="$aliyun" -v tsinghua="$tsinghua" '
+          BEGIN { leading = 1 }
+          index($0, aliyun) || index($0, tsinghua) { next }
+          leading && $0 ~ /^[[:space:]]*$/ { next }
+          { leading = 0; print }
+        ' "$mirrorlist"
+      fi
+    } >"$temp_file"
 
-    # 添加清华镜像源到顶部
-    echo "$tsinghua" >>"$temp_file"
+    if sudo test -f "$mirrorlist" 2>/dev/null && sudo cmp -s "$temp_file" "$mirrorlist" 2>/dev/null; then
+      log_message "镜像源已是最新，跳过更新"
+      exit 0
+    fi
 
-    # 添加空行分隔
-    echo "" >>"$temp_file"
+    if sudo test -f "$mirrorlist" 2>/dev/null; then
+      backup_sudo_file_if_exists "$mirrorlist" || exit 1
+    fi
 
-    # 添加原有内容
-    sudo cat "$mirrorlist" >>"$temp_file"
-
-    # 替换原文件
-    sudo mv "$temp_file" "$mirrorlist"
-    sudo chmod 644 "$mirrorlist"
+    sudo install -Dm 0644 "$temp_file" "$mirrorlist" || { handle_error "写入镜像源失败: $mirrorlist"; exit 1; }
     log_message "镜像源已更新"
-  else
-    log_message "镜像源已包含所需源，跳过更新"
-  fi
+  )
 }
 
 # 同步配置到系统
@@ -620,22 +681,39 @@ sync_system_to_project() {
 
 # 同步系统配置文件到系统
 sync_system_config_to_system() {
+  ensure_sudo || return 1
+
   for config in "${SYSTEM_CONFIG_FILES[@]}"; do
     local src_file="${config%%:*}"
     local dest_file="${config##*:}"
-    if [ -f "$src_file" ]; then
-      echo "正在同步 $(basename "$src_file") 到系统..."
-      sudo install -Dm 0644 "$src_file" "$dest_file" && log_message "$(basename "$src_file") 同步到系统成功" || handle_error "$(basename "$src_file") 同步到系统失败"
+    [ -f "$src_file" ] || continue
+
+    if sudo test -f "$dest_file" 2>/dev/null && sudo cmp -s "$src_file" "$dest_file" 2>/dev/null; then
+      log_message "$(basename "$src_file") 无变化，跳过同步"
+      continue
+    fi
+
+    echo "正在同步 $(basename "$src_file") 到系统..."
+    if ! backup_sudo_file_if_exists "$dest_file"; then
+      return 1
+    fi
+    if sudo install -Dm 0644 "$src_file" "$dest_file"; then
+      log_message "$(basename "$src_file") 同步到系统成功"
+    else
+      handle_error "$(basename "$src_file") 同步到系统失败"
+      return 1
     fi
   done
 }
 
 # 同步系统配置文件到项目
 sync_system_config_to_project() {
+  ensure_sudo || return 1
+
   for config in "${SYSTEM_CONFIG_FILES[@]}"; do
     local src_file="${config%%:*}"
     local dest_file="${config##*:}"
-    if [ -f "$dest_file" ]; then
+    if sudo test -f "$dest_file" 2>/dev/null; then
       echo "正在同步 $(basename "$dest_file") 到项目..."
       sudo cp -f "$dest_file" "$src_file" && log_message "$(basename "$dest_file") 同步到项目成功" || handle_error "$(basename "$dest_file") 同步到项目失败"
       sudo chown "$USER:$USER" "$src_file" 2>/dev/null || true
@@ -645,13 +723,15 @@ sync_system_config_to_project() {
 
 # 同步单向文件到系统
 sync_one_way_to_system() {
+  ensure_sudo || return 1
+
   for config in "${ONE_WAY_SYNC[@]}"; do
     local src_file="${config%%:*}"
     local dest_file="${config##*:}"
     if [ -d "$src_file" ]; then
       echo "正在同步 $(basename "$src_file") 到系统..."
       sudo mkdir -p "$dest_file" || handle_error "创建目录失败: $dest_file"
-      sudo cp -rf "$src_file"/* "$dest_file/" && log_message "$(basename "$src_file") 同步到系统成功" || handle_error "$(basename "$src_file") 同步到系统失败"
+      sudo cp -rf "$src_file"/. "$dest_file/" && log_message "$(basename "$src_file") 同步到系统成功" || handle_error "$(basename "$src_file") 同步到系统失败"
     fi
   done
 }
@@ -660,8 +740,15 @@ sync_one_way_to_system() {
 install_packages() {
   log_message "开始安装软件包..."
 
+  ensure_sudo || return 1
+
   # 基础依赖（用于构建 AUR 包）
-  sudo pacman -Syu --noconfirm --needed base-devel git && log_message "基础依赖安装完成" || handle_error "基础依赖安装失败"
+  if sudo pacman -Syu --noconfirm --needed base-devel git; then
+    log_message "基础依赖安装完成"
+  else
+    handle_error "基础依赖安装失败"
+    return 1
+  fi
 
   # 先安装 chezmoi
   ensure_chezmoi || return 1
@@ -670,22 +757,32 @@ install_packages() {
   if ! command -v paru >/dev/null 2>&1; then
     echo "正在安装 paru (AUR)..."
     local tmp_dir
-    tmp_dir="$(mktemp -d)"
-    git clone https://aur.archlinux.org/paru.git "$tmp_dir/paru" || handle_error "克隆 paru 仓库失败"
-    (cd "$tmp_dir/paru" && makepkg -si --noconfirm --needed) || handle_error "构建/安装 paru 失败"
-    rm -rf "$tmp_dir"
-    command -v paru >/dev/null 2>&1 && log_message "paru 安装成功" || handle_error "paru 安装失败"
+    tmp_dir="$(mktemp -d)" || { handle_error "创建临时目录失败"; return 1; }
+    if ! (
+      trap 'rm -rf "$tmp_dir"' EXIT
+      git clone https://aur.archlinux.org/paru.git "$tmp_dir/paru" || { handle_error "克隆 paru 仓库失败"; exit 1; }
+      (cd "$tmp_dir/paru" && makepkg -si --noconfirm --needed) || { handle_error "构建/安装 paru 失败"; exit 1; }
+    ); then
+      return 1
+    fi
+    if command -v paru >/dev/null 2>&1; then
+      log_message "paru 安装成功"
+    else
+      handle_error "paru 安装失败"
+      return 1
+    fi
   fi
 
-  # 循环遍历列表，安装每一个包
-  for package in "${PACKAGE_LIST[@]}"; do
-    # 如果该行是注释，则跳过
-    [[ "$package" =~ ^# ]] && continue
+  local failed_packages=()
 
+  # 循环遍历列表，安装每一个包
+  local package
+  for package in "${PACKAGE_LIST[@]}"; do
     echo "Installing $package ..."
     if paru --noconfirm --needed -S "$package"; then
       log_message "$package 安装成功"
     else
+      failed_packages+=("$package")
       handle_error "$package 安装失败"
     fi
   done
@@ -694,33 +791,31 @@ install_packages() {
 
   # 启用必要的服务
   enable_services
+
+  if [ "${#failed_packages[@]}" -gt 0 ]; then
+    echo "以下软件包安装失败: ${failed_packages[*]}" >&2
+    return 1
+  fi
 }
 
 # 启用系统服务
 enable_services() {
   log_message "开始启用系统服务..."
 
-  # 需要启用的服务列表
-  local services=(
-    "sddm"           # 显示管理器
-    "sshd"           # SSH服务
-    "pipewire"       # PipeWire音频服务
-    "pipewire-pulse" # PipeWire Pulse兼容层
-    "wireplumber"    # PipeWire会话管理
-    "bluetooth"      # 蓝牙
-  )
+  ensure_sudo || return 1
 
   # 系统级服务（需要sudo）
   local system_services=(
     "sddm"
     "sshd"
+    "bluetooth"
   )
 
   # 用户级服务
-  local user_services=(
-    "pipewire"
-    "pipewire-pulse"
-    "wireplumber"
+  local user_units=(
+    "pipewire.socket"
+    "pipewire-pulse.socket"
+    "wireplumber.service"
   )
 
   # 启用系统级服务
@@ -734,14 +829,26 @@ enable_services() {
   done
 
   # 启用用户级服务
-  for service in "${user_services[@]}"; do
-    echo "正在启用用户服务: $service..."
-    if systemctl --user enable "$service"; then
-      log_message "用户服务 $service 启用成功"
-    else
-      log_message "用户服务 $service 启用失败（可能需要用户登录后生效）"
-    fi
-  done
+  if systemctl --user show-environment >/dev/null 2>&1; then
+    for unit in "${user_units[@]}"; do
+      echo "正在启用用户服务: $unit..."
+      if systemctl --user enable --now "$unit"; then
+        log_message "用户服务 $unit 启用并启动成功"
+      else
+        handle_error "用户服务 $unit 启用失败"
+      fi
+    done
+  else
+    log_message "未检测到用户 systemd 会话，尝试全局启用用户服务（下次登录生效）"
+    for unit in "${user_units[@]}"; do
+      echo "正在全局启用用户服务: $unit..."
+      if sudo systemctl --global enable "$unit"; then
+        log_message "全局用户服务 $unit 启用成功"
+      else
+        handle_error "全局用户服务 $unit 启用失败"
+      fi
+    done
+  fi
 
   echo "服务启用完成！"
 }

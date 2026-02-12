@@ -1,0 +1,309 @@
+#!/bin/bash
+
+################################################################################
+# 现代化电源菜单脚本
+# 功能：锁定、挂起、登出、关机、休眠、重启
+# 特性：模块化设计、快捷键支持、betterlockscreen 集成
+################################################################################
+
+# ============================================================================
+# 配置区域
+# ============================================================================
+
+# 脚本目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Rofi 主题文件
+ROFI_THEME="${SCRIPT_DIR}/lock-menu.rasi"
+
+# 锁屏工具配置
+LOCK_TOOL="betterlockscreen"  # 可选: betterlockscreen, i3lock-color, i3lock
+LOCK_FALLBACK="i3lock"
+
+# 背景图片目录
+BG_DIR="/usr/share/backgrounds"
+
+# 图标主题
+ICON_THEME="Papirus"
+
+# 菜单选项（使用 Nerd Font 图标，包含快捷键提示）
+declare -A MENU_OPTIONS=(
+    ["lock"]="  锁定 (L)"
+    ["suspend"]="󰒲  挂起 (S)"
+    ["logout"]="󰍃  登出 (O)"
+    ["shutdown"]="  关机 (P)"
+    ["hibernate"]="󰋊  休眠 (H)"
+    ["reboot"]="  重启 (R)"
+)
+
+# 快捷键映射（字母键）
+declare -A HOTKEYS=(
+    ["lock"]="l"
+    ["suspend"]="s"
+    ["logout"]="o"
+    ["shutdown"]="p"
+    ["hibernate"]="h"
+    ["reboot"]="r"
+)
+
+# ============================================================================
+# 工具函数
+# ============================================================================
+
+# 检查命令是否存在
+command_exists() {
+    command -v "$1" &>/dev/null
+}
+
+# 发送通知
+send_notification() {
+    local title="$1"
+    local message="$2"
+    local urgency="${3:-normal}"
+
+    if command_exists notify-send; then
+        notify-send -u "$urgency" "$title" "$message"
+    fi
+}
+
+# 检查依赖
+check_dependencies() {
+    local missing_deps=()
+
+    if ! command_exists rofi; then
+        missing_deps+=("rofi")
+    fi
+
+    if ! command_exists "$LOCK_TOOL" && ! command_exists "$LOCK_FALLBACK"; then
+        missing_deps+=("$LOCK_TOOL 或 $LOCK_FALLBACK")
+    fi
+
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        echo "错误：缺少必要的依赖项："
+        printf '  - %s\n' "${missing_deps[@]}"
+        exit 1
+    fi
+}
+
+# 获取随机背景图片
+get_random_background() {
+    if [ -d "$BG_DIR" ]; then
+        find "$BG_DIR" -type f \( -name "*.png" -o -name "*.jpg" \) 2>/dev/null | shuf -n1
+    fi
+}
+
+# ============================================================================
+# 锁屏功能
+# ============================================================================
+
+lock_screen() {
+    if command_exists betterlockscreen; then
+        # 使用 betterlockscreen（推荐）
+        betterlockscreen --lock blur
+    elif command_exists i3lock-color; then
+        # 使用 i3lock-color
+        local bg_image
+        bg_image=$(get_random_background)
+        if [ -n "$bg_image" ]; then
+            i3lock-color \
+                --image="$bg_image" \
+                --blur=5 \
+                --clock \
+                --indicator \
+                --time-str="%H:%M:%S" \
+                --date-str="%Y-%m-%d" \
+                --verif-text="验证中..." \
+                --wrong-text="密码错误！" \
+                --noinput-text="无输入" \
+                --lock-text="锁定中..." \
+                --lockfailed-text="锁定失败" \
+                --radius=120 \
+                --ring-width=10 \
+                --inside-color=00000088 \
+                --ring-color=ffffff88 \
+                --line-color=00000000 \
+                --keyhl-color=88c0d0ff \
+                --bshl-color=bf616aff \
+                --separator-color=00000000 \
+                --insidever-color=00000088 \
+                --ringver-color=88c0d0ff \
+                --insidewrong-color=00000088 \
+                --ringwrong-color=bf616aff \
+                --time-color=ffffffff \
+                --date-color=ffffffff \
+                --verif-color=ffffffff \
+                --wrong-color=ffffffff
+        else
+            i3lock-color --color=1e1e2e
+        fi
+    elif command_exists i3lock; then
+        # 回退到基础 i3lock
+        local bg_image
+        bg_image=$(get_random_background)
+        if [ -n "$bg_image" ]; then
+            i3lock --scale --image "$bg_image"
+        else
+            i3lock --color=1e1e2e
+        fi
+    else
+        send_notification "错误" "未找到可用的锁屏工具" "critical"
+        return 1
+    fi
+}
+
+# ============================================================================
+# 电源管理功能
+# ============================================================================
+
+action_lock() {
+    lock_screen
+}
+
+action_suspend() {
+    lock_screen &
+    sleep 0.5
+    systemctl suspend
+}
+
+action_logout() {
+    if [ -n "$XDG_SESSION_ID" ]; then
+        loginctl terminate-session "$XDG_SESSION_ID"
+    else
+        loginctl terminate-user "$USER"
+    fi
+}
+
+action_shutdown() {
+    systemctl poweroff
+}
+
+action_hibernate() {
+    lock_screen &
+    sleep 0.5
+    systemctl hibernate
+}
+
+action_reboot() {
+    systemctl reboot
+}
+
+# ============================================================================
+# 确认对话框
+# ============================================================================
+
+confirm_action() {
+    local action="$1"
+    local message="$2"
+
+    # 危险操作需要确认
+    case "$action" in
+        shutdown|reboot|logout)
+            local confirm
+            confirm=$(echo -e "是\n否" | rofi -dmenu -i -p "$message" \
+                -theme-str 'window { width: 400px; height: 200px; } listview { lines: 2; }')
+
+            [ "$confirm" = "是" ]
+            return $?
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+
+# ============================================================================
+# 主菜单
+# ============================================================================
+
+show_menu() {
+    # 构建菜单选项（避免末尾空行）
+    local menu_items=""
+    local keys=(lock suspend logout shutdown hibernate reboot)
+    local first=true
+
+    for key in "${keys[@]}"; do
+        if [ "$first" = true ]; then
+            menu_items="${MENU_OPTIONS[$key]}"
+            first=false
+        else
+            menu_items+="\n${MENU_OPTIONS[$key]}"
+        fi
+    done
+
+    # 构建快捷键绑定（使用字母键）
+    local kb_custom="-kb-custom-1 l -kb-custom-2 s -kb-custom-3 o -kb-custom-4 p -kb-custom-5 h -kb-custom-6 r"
+
+    # 显示菜单
+    local choice
+    choice=$(echo -e "$menu_items" | rofi \
+        -dmenu \
+        -i \
+        -p "电源菜单" \
+        -theme "$ROFI_THEME" \
+        -mesg "快捷键: L/S/O/P/H/R | ESC 取消" \
+        $kb_custom \
+        -selected-row 0)
+
+    local exit_code=$?
+
+    # 处理快捷键（exit code 10-15 对应 custom-1 到 custom-6）
+    if [ $exit_code -ge 10 ] && [ $exit_code -le 15 ]; then
+        local index=$((exit_code - 10))
+        local keys=(lock suspend logout shutdown hibernate reboot)
+        choice="${MENU_OPTIONS[${keys[$index]}]}"
+    fi
+
+    echo "$choice"
+}
+
+# ============================================================================
+# 主程序
+# ============================================================================
+
+main() {
+    # 检查依赖
+    check_dependencies
+
+    # 显示菜单
+    local choice
+    choice=$(show_menu)
+
+    # 处理选择
+    case "$choice" in
+        "${MENU_OPTIONS[lock]}")
+            action_lock
+            ;;
+        "${MENU_OPTIONS[suspend]}")
+            action_suspend
+            ;;
+        "${MENU_OPTIONS[logout]}")
+            if confirm_action "logout" "确认登出？"; then
+                action_logout
+            fi
+            ;;
+        "${MENU_OPTIONS[shutdown]}")
+            if confirm_action "shutdown" "确认关机？"; then
+                action_shutdown
+            fi
+            ;;
+        "${MENU_OPTIONS[hibernate]}")
+            action_hibernate
+            ;;
+        "${MENU_OPTIONS[reboot]}")
+            if confirm_action "reboot" "确认重启？"; then
+                action_reboot
+            fi
+            ;;
+        "")
+            # 用户取消
+            exit 0
+            ;;
+        *)
+            send_notification "错误" "未知选项: $choice" "critical"
+            exit 1
+            ;;
+    esac
+}
+
+# 运行主程序
+main "$@"

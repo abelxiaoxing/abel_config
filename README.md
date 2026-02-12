@@ -45,8 +45,8 @@ cd ~/.config/archlinux_config
 
 1. **同步配置到系统**: 仅对有差异的内容提供 diff/overwrite/all-overwrite/skip/quit 确认后再写入系统
 2. **同步系统配置到项目**: 仅对有差异的用户配置提供 diff/overwrite/all-overwrite/skip/quit 交互提示
-3. **环境安装**: 自动更新镜像源并安装所有必要的软件包
-4. **更新镜像源**: 仅更新系统镜像源为国内源
+3. **环境安装**: 自动更新镜像源并安装所有必要的软件包（失败会汇总提示）
+4. **更新镜像源**: 更新系统镜像源为国内源（会备份原文件）
 5. **一键部署**: 换源 + 安装软件包 + 同步配置到系统
 
 ### 支持的配置文件
@@ -155,8 +155,22 @@ archlinux_config/
 
 1. **权限要求**: 某些操作需要 sudo 权限，请确保有管理员权限
 2. **网络要求**: 环境安装需要网络连接，建议配置好代理或使用国内镜像源
-3. **备份建议**: 在执行大规模配置同步前，建议备份重要数据
+3. **备份建议**: 脚本在覆盖 `/etc` 相关文件前会自动创建时间戳备份（形如 `*.bak-YYYYmmddHHMMSS`），但仍建议在大规模同步前自行备份重要数据
 4. **依赖检查**: 确保系统已安装基础的开发工具和 git
+
+## 维护与自检
+
+```bash
+# 脚本语法检查
+bash -n autoinstall.sh config.sh functions.sh
+
+# 若已安装 shellcheck，可进行静态检查
+shellcheck autoinstall.sh config.sh functions.sh
+
+# 预览/应用用户配置（chezmoi）
+chezmoi --source ./chezmoi diff
+chezmoi --source ./chezmoi apply
+```
 
 ## 更新日志
 
