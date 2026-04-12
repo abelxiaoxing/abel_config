@@ -8,6 +8,17 @@ chezmoi_cmd() {
   chezmoi --source "$CHEZMOI_SOURCE_DIR" "$@"
 }
 
+chezmoi_status_output() {
+  local target="$1"
+  local mode="${2:-auto}"
+
+  if [ "$mode" = "dir" ] || { [ "$mode" = "auto" ] && [ -d "$target" ]; }; then
+    chezmoi_cmd status --no-pager --recursive "$target" 2>/dev/null
+  else
+    chezmoi_cmd status --no-pager "$target" 2>/dev/null
+  fi
+}
+
 ensure_sudo() {
   if ! command -v sudo >/dev/null 2>&1; then
     handle_error "未找到 sudo 命令"
@@ -59,11 +70,58 @@ chezmoi_apply_change_count() {
   local target="$1"
   local mode="${2:-auto}"
 
-  if [ "$mode" = "dir" ] || { [ "$mode" = "auto" ] && [ -d "$target" ]; }; then
-    chezmoi_cmd status --no-pager --recursive "$target" 2>/dev/null | awk 'length($0)>=2 && substr($0,2,1)!=" " {c++} END {print c+0}'
-  else
-    chezmoi_cmd status --no-pager "$target" 2>/dev/null | awk 'length($0)>=2 && substr($0,2,1)!=" " {c++} END {print c+0}'
-  fi
+  chezmoi_status_output "$target" "$mode" | awk 'length($0)>=2 && substr($0,2,1)!=" " {c++} END {print c+0}'
+}
+
+chezmoi_add_change_count() {
+  local target="$1"
+  local mode="${2:-auto}"
+
+  chezmoi_status_output "$target" "$mode" | awk 'length($0)>=2 {s=substr($0,2,1); if (s=="M" || s=="D" || s=="R") c++} END {print c+0}'
+}
+
+chezmoi_missing_change_count() {
+  local target="$1"
+  local mode="${2:-auto}"
+
+  # Only DA is safe to sync back as a source deletion; plain " A" means apply will create it.
+  chezmoi_status_output "$target" "$mode" | awk 'length($0)>=2 {if (substr($0,1,2)=="DA") c++} END {print c+0}'
+}
+
+chezmoi_missing_target_paths() {
+  local target="$1"
+  local mode="${2:-auto}"
+
+  chezmoi_status_output "$target" "$mode" | awk 'length($0)>=4 && substr($0,1,2)=="DA" {print substr($0,4)}'
+}
+
+chezmoi_sorted_missing_target_paths() {
+  local target="$1"
+  local mode="${2:-auto}"
+
+  chezmoi_missing_target_paths "$target" "$mode" \
+    | awk 'NF && !seen[$0]++ {print length($0) "\t" $0}' \
+    | sort -rn \
+    | cut -f2-
+}
+
+chezmoi_forget_missing_entries() {
+  local target="$1"
+  local mode="${2:-auto}"
+  local missing_paths=()
+  local path full_path
+
+  mapfile -t missing_paths < <(chezmoi_sorted_missing_target_paths "$target" "$mode")
+
+  [ "${#missing_paths[@]}" -eq 0 ] && return 0
+
+  for path in "${missing_paths[@]}"; do
+    full_path="$path"
+    if [[ "$full_path" != /* ]]; then
+      full_path="$HOME/${full_path#./}"
+    fi
+    chezmoi_cmd forget --force "$full_path" || handle_error "chezmoi forget 失败: $full_path"
+  done
 }
 
 print_chezmoi_diff() {
@@ -80,6 +138,33 @@ print_chezmoi_diff() {
   else
     echo "$diff_output"
   fi
+}
+
+print_chezmoi_sync_back_preview() {
+  local target="$1"
+  local mode="${2:-auto}"
+  local add_count="${3:-0}"
+  local missing_count="${4:-0}"
+  local missing_paths=()
+  local path printed=0
+
+  if [ "$add_count" -gt 0 ]; then
+    echo "将通过 chezmoi add 写回仓库的修改:"
+    print_chezmoi_diff "$target" "$mode"
+    printed=1
+  fi
+
+  if [ "$missing_count" -gt 0 ]; then
+    mapfile -t missing_paths < <(chezmoi_sorted_missing_target_paths "$target" "$mode")
+    [ "$printed" -eq 1 ] && echo ""
+    echo "将通过 chezmoi forget 从仓库移除的条目:"
+    for path in "${missing_paths[@]}"; do
+      echo "- $path"
+    done
+    printed=1
+  fi
+
+  [ "$printed" -eq 1 ] || echo "无差异"
 }
 
 chezmoi_apply_force() {
@@ -435,21 +520,45 @@ add_user_configs_to_project_with_chezmoi() {
     return 1
   fi
 
-  log_message "正在从系统回同步用户配置到项目（chezmoi add）..."
+  log_message "正在从系统回同步用户配置到项目（chezmoi add/forget）..."
 
   for dir in "${CONFIG_DIRS[@]}"; do
-    [ -d "$HOME/.config/$dir" ] || continue
+    local target="$HOME/.config/$dir"
+    local mode="dir"
+    local add_count missing_count
     if [ "$dir" = "opencode" ]; then
-      [ -f "$HOME/.config/opencode/opencode.json" ] && chezmoi_cmd add "$HOME/.config/opencode/opencode.json" || true
-      continue
+      target="$HOME/.config/opencode/opencode.json"
+      mode="file"
     fi
 
-    chezmoi_cmd add --recursive "$HOME/.config/$dir" || handle_error "chezmoi add 失败: $dir"
+    missing_count="$(chezmoi_missing_change_count "$target" "$mode")"
+    if [ "$missing_count" -gt 0 ]; then
+      chezmoi_forget_missing_entries "$target" "$mode"
+    fi
+
+    add_count="$(chezmoi_add_change_count "$target" "$mode")"
+    [ "$add_count" -gt 0 ] || continue
+
+    case "$mode" in
+    dir)
+      chezmoi_cmd add --force --exact --recursive "$target" || handle_error "chezmoi add 失败: $dir"
+      ;;
+    file)
+      chezmoi_cmd add --force "$target" || handle_error "chezmoi add 失败: $target"
+      ;;
+    esac
   done
 
   for target in "${USER_CONFIG_FILES[@]}"; do
-    [ -e "$target" ] || continue
-    chezmoi_cmd add "$target" || handle_error "chezmoi add 失败: $target"
+    local add_count missing_count
+    missing_count="$(chezmoi_missing_change_count "$target" "file")"
+    if [ "$missing_count" -gt 0 ]; then
+      chezmoi_forget_missing_entries "$target" "file"
+    fi
+
+    add_count="$(chezmoi_add_change_count "$target" "file")"
+    [ "$add_count" -gt 0 ] || continue
+    chezmoi_cmd add --force "$target" || handle_error "chezmoi add 失败: $target"
   done
 }
 
@@ -465,13 +574,13 @@ sync_user_configs_to_project_interactive() {
   local dir
   for dir in "${CONFIG_DIRS[@]}"; do
     if [ "$dir" = "opencode" ]; then
-      [ -f "$HOME/.config/opencode/opencode.json" ] && items+=("opencode|$HOME/.config/opencode/opencode.json|file")
+      items+=("opencode|$HOME/.config/opencode/opencode.json|file")
       continue
     fi
-    [ -d "$HOME/.config/$dir" ] && items+=("$dir|$HOME/.config/$dir|dir")
+    items+=("$dir|$HOME/.config/$dir|dir")
   done
   for target in "${USER_CONFIG_FILES[@]}"; do
-    [ -e "$target" ] && items+=("$(basename "$target")|$target|file")
+    items+=("$(basename "$target")|$target|file")
   done
 
   if [ "${#items[@]}" -eq 0 ]; then
@@ -480,6 +589,7 @@ sync_user_configs_to_project_interactive() {
   fi
 
   local changed_items=()
+  local apply_only_items=()
   local unchanged_items=()
   local item
   for item in "${items[@]}"; do
@@ -487,11 +597,20 @@ sync_user_configs_to_project_interactive() {
     local rest="${item#*|}"
     local target="${rest%%|*}"
     local mode="${rest##*|}"
-    local count
-    count="$(chezmoi_apply_change_count "$target" "$mode")"
-    if [ "$count" -gt 0 ]; then
-      changed_items+=("$label|$target|$mode|$count")
-    else
+    local add_count missing_count apply_count sync_back_count residual_apply_count
+    add_count="$(chezmoi_add_change_count "$target" "$mode")"
+    missing_count="$(chezmoi_missing_change_count "$target" "$mode")"
+    sync_back_count=$((add_count + missing_count))
+
+    if [ "$sync_back_count" -gt 0 ]; then
+      changed_items+=("$label|$target|$mode|$add_count|$missing_count")
+    fi
+
+    apply_count="$(chezmoi_apply_change_count "$target" "$mode")"
+    residual_apply_count=$((apply_count - sync_back_count))
+    if [ "$residual_apply_count" -gt 0 ]; then
+      apply_only_items+=("$label|$residual_apply_count")
+    elif [ "$sync_back_count" -eq 0 ]; then
       unchanged_items+=("$label")
     fi
   done
@@ -499,15 +618,44 @@ sync_user_configs_to_project_interactive() {
   echo "用户配置回同步（chezmoi）变更扫描完成："
   if [ "${#changed_items[@]}" -eq 0 ]; then
     echo "- 无需要同步回仓库的变更"
+    if [ "${#apply_only_items[@]}" -gt 0 ]; then
+      echo "- 以下模块存在仅 apply 漂移（当前仍需先 apply）:"
+      for item in "${apply_only_items[@]}"; do
+        local label="${item%%|*}"
+        local count="${item##*|}"
+        echo "  - $label ($count)"
+      done
+      echo "- 建议先执行：同步配置到系统 -> 仅同步用户配置（chezmoi apply）"
+    fi
     return 0
   fi
 
   echo "- 需要回同步的模块:"
   for item in "${changed_items[@]}"; do
     local label="${item%%|*}"
-    local count="${item##*|}"
-    echo "  - $label ($count)"
+    local rest="${item#*|}"
+    rest="${rest#*|}"
+    rest="${rest#*|}"
+    local add_count="${rest%%|*}"
+    local missing_count="${rest##*|}"
+    local total_count=$((add_count + missing_count))
+    if [ "$add_count" -gt 0 ] && [ "$missing_count" -gt 0 ]; then
+      echo "  - $label (共 $total_count: 修改 $add_count, 本地删除 $missing_count)"
+    elif [ "$add_count" -gt 0 ]; then
+      echo "  - $label (修改 $add_count)"
+    else
+      echo "  - $label (本地删除 $missing_count)"
+    fi
   done
+  if [ "${#apply_only_items[@]}" -gt 0 ]; then
+    echo "- 以下模块存在仅 apply 漂移（当前仍需先 apply）:"
+    for item in "${apply_only_items[@]}"; do
+      local label="${item%%|*}"
+      local count="${item##*|}"
+      echo "  - $label ($count)"
+    done
+    echo "- 建议先执行：同步配置到系统 -> 仅同步用户配置（chezmoi apply）"
+  fi
   if [ "${#unchanged_items[@]}" -gt 0 ]; then
     if [ "${#unchanged_items[@]}" -le 10 ]; then
       echo "- 无变化: ${unchanged_items[*]}"
@@ -518,8 +666,8 @@ sync_user_configs_to_project_interactive() {
     fi
   fi
 
-  log_message "开始交互式回同步用户配置到仓库（chezmoi add）..."
-  log_message "提示: d=diff, o=overwrite, a=all-overwrite, s=skip, q=quit"
+  log_message "开始交互式回同步用户配置到仓库（chezmoi add/forget）..."
+  log_message "提示: d=diff, o=sync, a=all-sync, s=skip, q=quit"
 
   local overwrite_all=0
   local synced_any=0
@@ -535,6 +683,9 @@ sync_user_configs_to_project_interactive() {
     local target="${rest%%|*}"
     rest="${rest#*|}"
     local mode="${rest%%|*}"
+    rest="${rest#*|}"
+    local add_count="${rest%%|*}"
+    local missing_count="${rest##*|}"
 
     local action
     if [ "$overwrite_all" -eq 1 ]; then
@@ -546,7 +697,7 @@ sync_user_configs_to_project_interactive() {
         action="$(prompt_action "选择 [d/o/a/s/q]: ")"
         case "$action" in
         d | D)
-          print_chezmoi_diff "$target" "$mode"
+          print_chezmoi_sync_back_preview "$target" "$mode" "$add_count" "$missing_count"
           ;;
         *)
           break
@@ -561,17 +712,29 @@ sync_user_configs_to_project_interactive() {
         overwrite_all=1
       fi
 
-      case "$mode" in
-      dir)
-        chezmoi_cmd add --force --exact --recursive "$target" || handle_error "chezmoi add 失败: $label"
-        ;;
-      file)
-        chezmoi_cmd add --force "$target" || handle_error "chezmoi add 失败: $label"
-        ;;
-      esac
+      if [ "$missing_count" -gt 0 ]; then
+        chezmoi_forget_missing_entries "$target" "$mode"
+      fi
+
+      if [ "$add_count" -gt 0 ]; then
+        case "$mode" in
+        dir)
+          chezmoi_cmd add --force --exact --recursive "$target" || handle_error "chezmoi add 失败: $label"
+          ;;
+        file)
+          chezmoi_cmd add --force "$target" || handle_error "chezmoi add 失败: $label"
+          ;;
+        esac
+      fi
 
       synced_any=1
-      log_message "已同步到仓库: $label"
+      if [ "$add_count" -gt 0 ] && [ "$missing_count" -gt 0 ]; then
+        log_message "已同步到仓库: $label (修改 $add_count, 本地删除 $missing_count)"
+      elif [ "$add_count" -gt 0 ]; then
+        log_message "已同步到仓库: $label (修改 $add_count)"
+      else
+        log_message "已同步到仓库: $label (本地删除 $missing_count)"
+      fi
       ;;
     s | S)
       log_message "已跳过: $label"

@@ -17,7 +17,7 @@ $scripts/launch_waybar &
 $scripts/tools/dynamic &
 
 # wallpaper
-$scripts/wall ~/.config/backgrounds/cat-rainbow-arch.png &
+$scripts/wall /usr/share/backgrounds/cat-rainbow-arch.png &
 # effects
 $scripts/rgb &
 

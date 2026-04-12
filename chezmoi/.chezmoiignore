@@ -6,6 +6,23 @@
 # Generated caches/state inside ~/.config (do not sync)
 .config/fcitx5/**/cached_layouts*
 .config/hypr/store/**
+.config/nvim/**/.cache/**
+.config/nvim/**/cache/**
+.config/nvim/**/.tmp/**
+.config/nvim/**/tmp/**
+.config/nvim/**/undo/**
+.config/nvim/**/swap/**
+.config/nvim/**/shada/**
+.config/nvim/**/*.swp
+.config/nvim/**/*.swo
+.config/nvim/**/*.tmp
+.config/nvim/**/*.bak
+.config/dunst/**/.cache/**
+.config/dunst/**/cache/**
+.config/dunst/**/history*
+.config/dunst/**/.history*
+.config/dunst/**/*.tmp
+.config/dunst/**/*.bak
 
 # Opencode runtime files (kept out of repo)
 .config/opencode/node_modules/**
